@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { Line } from 'vue-chartjs';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ChartOptions } from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
+import type { ChartData } from 'chart.js';
 import axios from 'axios';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, annotationPlugin);
 
 const selectedPeriod = ref('30d');
 
-const chartData = ref({
+const chartData = ref<ChartData<'line'>>({
   labels: [],
   datasets: [{
     label: 'Bitcoin Price (USD)',
@@ -37,7 +39,7 @@ const growthDetails = ref({
   percentageGrowth: 0
 });
 
-const chartOptions = {
+const chartOptions = ref<ChartOptions<'line'>>({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -68,12 +70,17 @@ const chartOptions = {
       annotations: {
         growthLabel: {
           type: 'label',
+          drawTime: 'afterDatasetsDraw',
           content: 'Longest Growth Period',
           color: '#22c55e',
           display: true,
           font: {
             size: 14,
             weight: 'bold'
+          },
+          position: {
+            x: 'center',
+            y: 'center'
           }
         }
       }
@@ -112,7 +119,7 @@ const chartOptions = {
       }
     }
   }
-};
+});
 
 const loading = ref(true);
 const error = ref('');
@@ -174,10 +181,11 @@ async function fetchBitcoinData() {
     };
 
     // Update annotation position
-    const midPoint = Math.floor((startIndex + endIndex) / 2);
-    chartOptions.plugins.annotation.annotations.growthLabel.xValue = midPoint;
-    chartOptions.plugins.annotation.annotations.growthLabel.yValue = 
-      (prices[startIndex] + prices[endIndex]) / 2;
+    if (chartOptions.value.plugins?.annotation?.annotations?.growthLabel) {
+      const annotation = chartOptions.value.plugins.annotation.annotations.growthLabel as any;
+      annotation.xValue = chartData.value.labels[Math.floor((startIndex + endIndex) / 2)];
+      annotation.yValue = (prices[startIndex] + prices[endIndex]) / 2;
+    }
 
     loading.value = false;
   } catch (e) {
