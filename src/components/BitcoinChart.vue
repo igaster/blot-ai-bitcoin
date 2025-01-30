@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { Line } from 'vue-chartjs';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ChartOptions } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
@@ -39,6 +39,10 @@ const growthDetails = ref({
   percentageGrowth: 0
 });
 
+const isDark = computed(() => document.documentElement.classList.contains('dark'));
+const textColor = computed(() => isDark.value ? '#fff' : '#000');
+const gridColor = computed(() => isDark.value ? '#374151' : '#e5e7eb');
+
 const chartOptions = ref<ChartOptions<'line'>>({
   responsive: true,
   maintainAspectRatio: false,
@@ -46,13 +50,13 @@ const chartOptions = ref<ChartOptions<'line'>>({
     legend: {
       position: 'top' as const,
       labels: {
-        color: () => document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+        color: textColor.value
       }
     },
     title: {
       display: true,
       text: 'Bitcoin Price History',
-      color: () => document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+      color: textColor.value
     },
     tooltip: {
       callbacks: {
@@ -91,31 +95,31 @@ const chartOptions = ref<ChartOptions<'line'>>({
       title: {
         display: true,
         text: 'Date',
-        color: () => document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+        color: textColor.value
       },
       ticks: {
-        color: () => document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+        color: textColor.value,
         maxRotation: 45,
         minRotation: 45
       },
       grid: {
-        color: () => document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+        color: gridColor.value
       }
     },
     y: {
       title: {
         display: true,
         text: 'Price (USD)',
-        color: () => document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+        color: textColor.value
       },
       ticks: {
-        color: () => document.documentElement.classList.contains('dark') ? '#fff' : '#000',
+        color: textColor.value,
         callback: (value: number) => {
           return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         }
       },
       grid: {
-        color: () => document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb'
+        color: gridColor.value
       }
     }
   }
@@ -186,6 +190,16 @@ async function fetchBitcoinData() {
       annotation.xValue = chartData.value.labels[Math.floor((startIndex + endIndex) / 2)];
       annotation.yValue = (prices[startIndex] + prices[endIndex]) / 2;
     }
+
+    // Update chart colors based on dark mode
+    chartOptions.value.plugins!.legend!.labels!.color = textColor.value;
+    chartOptions.value.plugins!.title!.color = textColor.value;
+    chartOptions.value.scales!.x!.title!.color = textColor.value;
+    chartOptions.value.scales!.x!.ticks!.color = textColor.value;
+    chartOptions.value.scales!.x!.grid!.color = gridColor.value;
+    chartOptions.value.scales!.y!.title!.color = textColor.value;
+    chartOptions.value.scales!.y!.ticks!.color = textColor.value;
+    chartOptions.value.scales!.y!.grid!.color = gridColor.value;
 
     loading.value = false;
   } catch (e) {
